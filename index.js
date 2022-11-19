@@ -41,9 +41,10 @@ app.get("/appointmentOptions", async (req, res) => {
     const query = {};
     const options = await appointmentOptionsCollection.find(query).toArray();
 
+    // We can use MongoDB Aggregate instead of this madness
     // Getting booking list on that date
     const date = req.query.date;
-    const bookingQuery = { appointmentData: date };
+    const bookingQuery = { appointmentDate: date };
     const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
 
     // Get slots booked for treatment
@@ -73,6 +74,18 @@ app.post("/bookings", async (req, res) => {
   try {
     const booking = req.body;
     console.log(booking);
+    const bookingQuery = {
+      email: booking.email,
+      treatment: booking.treatment,
+      appointmentDate: booking.appointmentDate,
+    };
+
+    const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
+
+    if (alreadyBooked.length) {
+      const message = `You already booked for this treatment on ${booking.appointmentDate}`;
+      return res.send({ acknowledged: false, message });
+    }
     const result = await bookingsCollection.insertOne(booking);
     res.send(result);
   } catch (err) {
