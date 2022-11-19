@@ -54,8 +54,11 @@ app.get("/appointmentOptions", async (req, res) => {
 
       const bookedSlots = optionBooked.map((book) => book.slot);
 
-      //
-      console.log(option.name, bookedSlots);
+      // Get the remaining slots and set it on options
+      const remainingSlots = option.slots.filter(
+        (slot) => !bookedSlots.includes(slot)
+      );
+      option.slots = remainingSlots;
     });
 
     res.send(options);
