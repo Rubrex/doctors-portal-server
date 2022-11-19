@@ -32,6 +32,7 @@ connectDB();
 const appointmentOptionsCollection = client
   .db("doctorsPortal")
   .collection("appointmentOptions");
+const bookingsCollection = client.db("doctorsPortal").collection("bookings");
 
 // Get all the appointment options
 
@@ -40,6 +41,19 @@ app.get("/appointmentOptions", async (req, res) => {
     const query = {};
     const cursor = await appointmentOptionsCollection.find(query).toArray();
     res.send(cursor);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+// Send Bookin data to database
+
+app.post("/bookings", async (req, res) => {
+  try {
+    const booking = req.body;
+    console.log(booking);
+    const result = await bookingsCollection.insertOne(booking);
+    res.send(result);
   } catch (err) {
     console.log(err);
   }
