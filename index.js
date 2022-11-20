@@ -166,13 +166,26 @@ app.get("/users", async (req, res) => {
   res.send(users);
 });
 
+// Check if the user is Admin
+app.get("/users/admin/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+
+    res.send({ isAdmin: user?.role === "admin" });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 // Make user admin PUT
 app.put("/users/admin/:id", verifyJWT, async (req, res) => {
   // Second layer of security
   // only admin can request to make admin
   const decodedEmail = req.decoded;
-  const query = { email: decodedEmail };
-  const user = usersCollection.findOne(query);
+  const query = { email: decodedEmail.email };
+  const user = await usersCollection.findOne(query);
 
   if (user?.role !== "admin") {
     return res.status(403).send({ message: "forbidden access" });
