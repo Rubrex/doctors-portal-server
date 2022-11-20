@@ -33,6 +33,7 @@ const appointmentOptionsCollection = client
   .db("doctorsPortal")
   .collection("appointmentOptions");
 const bookingsCollection = client.db("doctorsPortal").collection("bookings");
+const usersCollection = client.db("doctorsPortal").collection("users");
 
 // Get all the appointment options
 
@@ -68,6 +69,16 @@ app.get("/appointmentOptions", async (req, res) => {
   }
 });
 
+// Get Bookins data from search query {?email}
+
+app.get("/bookings", async (req, res) => {
+  const email = req.query.email;
+  const query = { email };
+  const result = await bookingsCollection.find(query).toArray();
+
+  res.send(result);
+});
+
 // Send Bookin data to database
 
 app.post("/bookings", async (req, res) => {
@@ -91,6 +102,14 @@ app.post("/bookings", async (req, res) => {
   } catch (err) {
     console.log(err);
   }
+});
+
+// Save users to db
+app.post("/users", async (req, res) => {
+  const data = req.body;
+  const result = await usersCollection.insertOne(data);
+
+  res.send(result);
 });
 
 app.get("/", async (req, res) => {
