@@ -13,6 +13,28 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Middleware function
+const verifyJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  // If no headers sent, status 401
+  if (!authHeader) {
+    return res.status(401).send("Unauthorized access");
+  }
+
+  // Verify Token here
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.SECRET_KEY, function (err, decoded) {
+    if (err) {
+      return res.status(403).send("Forbidden access");
+    }
+    // Sending decoded value to req object and access it
+    // inside the api function
+    req.decoded = decoded;
+    next();
+  });
+};
+
 // Conntect DB
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.f3qt6qk.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri);
@@ -38,10 +60,9 @@ const usersCollection = client.db("doctorsPortal").collection("users");
 
 // Generate JWT token for sign in
 app.get("/jwt", async (req, res) => {
-  const email = req.body.email;
+  const email = req.query.email;
   const query = { email: email };
   const user = await usersCollection.findOne(query);
-  console.log(query);
 
   if (user) {
     const token = jwt.sign({ email: email }, process.env.SECRET_KEY, {
@@ -90,11 +111,17 @@ app.get("/appointmentOptions", async (req, res) => {
 
 // Get Bookins data from search query {?email}
 
-app.get("/bookings", async (req, res) => {
+app.get("/bookings", verifyJWT, async (req, res) => {
   const email = req.query.email;
+  const decodedEmail = req.decoded.email;
   const query = { email };
-  const result = await bookingsCollection.find(query).toArray();
 
+  // Verify decoded email with query email
+  if (decodedEmail !== email) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+
+  const result = await bookingsCollection.find(query).toArray();
   res.send(result);
 });
 
