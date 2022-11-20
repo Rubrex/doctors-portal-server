@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const colors = require("colors");
 const jwt = require("jsonwebtoken");
 
@@ -154,6 +154,41 @@ app.post("/bookings", async (req, res) => {
 app.post("/users", async (req, res) => {
   const data = req.body;
   const result = await usersCollection.insertOne(data);
+
+  res.send(result);
+});
+
+// Get All users in Dashboard [ADMIN only access]
+app.get("/users", async (req, res) => {
+  const query = {};
+  const users = await usersCollection.find(query).toArray();
+
+  res.send(users);
+});
+
+// Make user admin PUT
+app.put("/users/admin/:id", verifyJWT, async (req, res) => {
+  // Second layer of security
+  // only admin can request to make admin
+  const decodedEmail = req.decoded;
+  const query = { email: decodedEmail };
+  const user = usersCollection.findOne(query);
+
+  if (user?.role !== "admin") {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+
+  const id = req.params.id;
+  const filter = { _id: ObjectId(id) };
+  const options = { upsert: true };
+
+  const updatedDoc = {
+    $set: {
+      role: "admin",
+    },
+  };
+
+  const result = await usersCollection.updateOne(filter, updatedDoc, options);
 
   res.send(result);
 });
