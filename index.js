@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const colors = require("colors");
+const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
 
@@ -34,6 +35,24 @@ const appointmentOptionsCollection = client
   .collection("appointmentOptions");
 const bookingsCollection = client.db("doctorsPortal").collection("bookings");
 const usersCollection = client.db("doctorsPortal").collection("users");
+
+// Generate JWT token for sign in
+app.get("/jwt", async (req, res) => {
+  const email = req.body.email;
+  const query = { email: email };
+  const user = await usersCollection.findOne(query);
+  console.log(query);
+
+  if (user) {
+    const token = jwt.sign({ email: email }, process.env.SECRET_KEY, {
+      expiresIn: "1h",
+    });
+
+    return res.send({ accessToken: token });
+  }
+
+  res.status(403).send({ accessToken: "" });
+});
 
 // Get all the appointment options
 
