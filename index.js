@@ -230,6 +230,13 @@ app.post("/doctors", async (req, res) => {
   res.send(result);
 });
 
+// Get all Doctors
+app.get("/doctors", async (req, res) => {
+  const query = {};
+  const result = await doctorsCollection.find(query).toArray();
+  res.send(result);
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
