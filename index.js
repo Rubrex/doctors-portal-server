@@ -14,6 +14,8 @@ app.use(cors());
 app.use(express.json());
 
 // Middleware function
+
+// Verify JWT Token
 const verifyJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -33,6 +35,20 @@ const verifyJWT = (req, res, next) => {
     req.decoded = decoded;
     next();
   });
+};
+
+// Make sure to run this after verifyJWT
+// Decoded jwt is dependent for this middleware
+const verifyAdmin = async (req, res, next) => {
+  const decodedEmail = req.decoded.email;
+  const query = { email: decodedEmail };
+  const user = await usersCollection.findOne(query);
+
+  if (user?.role !== "admin") {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+
+  next();
 };
 
 // Conntect DB
@@ -67,7 +83,7 @@ app.get("/jwt", async (req, res) => {
 
   if (user) {
     const token = jwt.sign({ email: email }, process.env.SECRET_KEY, {
-      expiresIn: "1h",
+      expiresIn: "10h",
     });
 
     return res.send({ accessToken: token });
@@ -160,7 +176,7 @@ app.post("/users", async (req, res) => {
 });
 
 // Get All users in Dashboard [ADMIN only access]
-app.get("/users", async (req, res) => {
+app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
   const query = {};
   const users = await usersCollection.find(query).toArray();
 
@@ -181,17 +197,10 @@ app.get("/users/admin/:email", async (req, res) => {
 });
 
 // Make user admin PUT
-app.put("/users/admin/:id", verifyJWT, async (req, res) => {
+app.put("/users/admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
   // Second layer of security
   // only admin can request to make admin
-  const decodedEmail = req.decoded;
-  const query = { email: decodedEmail.email };
-  const user = await usersCollection.findOne(query);
-
-  if (user?.role !== "admin") {
-    return res.status(403).send({ message: "forbidden access" });
-  }
-
+  // Moved to verifyAdmin middleware
   const id = req.params.id;
   const filter = { _id: ObjectId(id) };
   const options = { upsert: true };
@@ -223,7 +232,7 @@ app.get("/appointmentSpeciality", async (req, res) => {
 });
 
 // Add a new Doctor
-app.post("/doctors", async (req, res) => {
+app.post("/doctors", verifyJWT, verifyAdmin, async (req, res) => {
   const doctor = req.body;
   const result = await doctorsCollection.insertOne(doctor);
 
@@ -231,14 +240,14 @@ app.post("/doctors", async (req, res) => {
 });
 
 // Get all Doctors
-app.get("/doctors", async (req, res) => {
+app.get("/doctors", verifyJWT, verifyAdmin, async (req, res) => {
   const query = {};
   const result = await doctorsCollection.find(query).toArray();
   res.send(result);
 });
 
 // Delete Doctor
-app.delete("/doctors/:id", verifyJWT, async (req, res) => {
+app.delete("/doctors/:id", verifyJWT, verifyAdmin, async (req, res) => {
   const id = req.params.id;
   console.log(id);
   const query = { _id: ObjectId(id) };
