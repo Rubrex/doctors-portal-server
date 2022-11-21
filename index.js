@@ -237,6 +237,15 @@ app.get("/doctors", async (req, res) => {
   res.send(result);
 });
 
+// Delete Doctor
+app.delete("/doctors/:id", async (req, res) => {
+  const id = req.params.id;
+  console.log(id);
+  const query = { _id: ObjectId(id) };
+  const deleteDoc = await doctorsCollection.deleteOne(query);
+  res.send(deleteDoc);
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
