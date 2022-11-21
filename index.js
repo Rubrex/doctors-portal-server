@@ -238,7 +238,7 @@ app.get("/doctors", async (req, res) => {
 });
 
 // Delete Doctor
-app.delete("/doctors/:id", async (req, res) => {
+app.delete("/doctors/:id", verifyJWT, async (req, res) => {
   const id = req.params.id;
   console.log(id);
   const query = { _id: ObjectId(id) };
