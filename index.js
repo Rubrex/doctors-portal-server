@@ -57,6 +57,7 @@ const appointmentOptionsCollection = client
   .collection("appointmentOptions");
 const bookingsCollection = client.db("doctorsPortal").collection("bookings");
 const usersCollection = client.db("doctorsPortal").collection("users");
+const doctorsCollection = client.db("doctorsPortal").collection("doctors");
 
 // Generate JWT token for sign in
 app.get("/jwt", async (req, res) => {
@@ -208,6 +209,17 @@ app.put("/users/admin/:id", verifyJWT, async (req, res) => {
 
 app.get("/", async (req, res) => {
   res.send("Doctors portal server is running");
+});
+
+// Get Speciality Lists
+app.get("/appointmentSpeciality", async (req, res) => {
+  const query = {};
+  const result = await appointmentOptionsCollection
+    .find(query)
+    .project({ name: 1 })
+    .toArray();
+
+  res.send(result);
 });
 
 app.listen(port, () => {
