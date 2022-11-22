@@ -92,6 +92,23 @@ app.get("/jwt", async (req, res) => {
   res.status(403).send({ accessToken: "" });
 });
 
+// temporary Update price field in appointmentOptions
+// app.get("/addPrice", async (req, res) => {
+//   const filter = {};
+//   const options = { upsert: true };
+//   const updatedDoc = {
+//     $set: {
+//       price: 77,
+//     },
+//   };
+//   const result = await appointmentOptionsCollection.updateMany(
+//     filter,
+//     updatedDoc,
+//     options
+//   );
+//   res.send(result);
+// });
+
 // Get all the appointment options
 
 app.get("/appointmentOptions", async (req, res) => {
@@ -140,6 +157,19 @@ app.get("/bookings", verifyJWT, async (req, res) => {
 
   const result = await bookingsCollection.find(query).toArray();
   res.send(result);
+});
+
+// Get Bookings data by booking id
+app.get("/bookings/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: ObjectId(id) };
+    const booking = await bookingsCollection.findOne(query);
+    console.log(query, booking);
+    res.send(booking);
+  } catch (err) {
+    console.log(err);
+  }
 });
 
 // Send Bookin data to database
