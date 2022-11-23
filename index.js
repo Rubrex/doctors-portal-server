@@ -1,10 +1,10 @@
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const colors = require("colors");
 const jwt = require("jsonwebtoken");
-
-require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -74,6 +74,24 @@ const appointmentOptionsCollection = client
 const bookingsCollection = client.db("doctorsPortal").collection("bookings");
 const usersCollection = client.db("doctorsPortal").collection("users");
 const doctorsCollection = client.db("doctorsPortal").collection("doctors");
+
+// Create payment intent
+app.post("/create-payment-intent", async (req, res) => {
+  const booking = req.body;
+  const price = booking.price;
+  // Convert cents to poisha
+  const amount = price * 100;
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    currency: "usd",
+    amount: amount,
+    payment_method_types: ["card"],
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+});
 
 // Generate JWT token for sign in
 app.get("/jwt", async (req, res) => {
@@ -165,7 +183,7 @@ app.get("/bookings/:id", async (req, res) => {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
     const booking = await bookingsCollection.findOne(query);
-    console.log(query, booking);
+
     res.send(booking);
   } catch (err) {
     console.log(err);
@@ -177,7 +195,7 @@ app.get("/bookings/:id", async (req, res) => {
 app.post("/bookings", async (req, res) => {
   try {
     const booking = req.body;
-    console.log(booking);
+
     const bookingQuery = {
       email: booking.email,
       treatment: booking.treatment,
