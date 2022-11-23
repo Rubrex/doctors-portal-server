@@ -74,6 +74,7 @@ const appointmentOptionsCollection = client
 const bookingsCollection = client.db("doctorsPortal").collection("bookings");
 const usersCollection = client.db("doctorsPortal").collection("users");
 const doctorsCollection = client.db("doctorsPortal").collection("doctors");
+const paymentsCollection = client.db("doctorsPortal").collection("payments");
 
 // Create payment intent
 app.post("/create-payment-intent", async (req, res) => {
@@ -91,6 +92,23 @@ app.post("/create-payment-intent", async (req, res) => {
   res.send({
     clientSecret: paymentIntent.client_secret,
   });
+});
+
+// Save payment id
+app.post("/payments", async (req, res) => {
+  const payment = req.body;
+  const insert = await paymentsCollection.insertOne(payment);
+  // Update from bookingCollection paid status
+  const id = payment.bookingId;
+  const filter = { _id: ObjectId(id) };
+  const updateDoc = {
+    $set: {
+      paid: true,
+      transactionId: payment.transactionId,
+    },
+  };
+  const updateInsert = await bookingsCollection.updateOne(filter, updateDoc);
+  res.send(insert);
 });
 
 // Generate JWT token for sign in
