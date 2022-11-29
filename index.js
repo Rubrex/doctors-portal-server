@@ -5,6 +5,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const colors = require("colors");
 const jwt = require("jsonwebtoken");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const nodemailer = require("nodemailer");
+const mg = require("nodemailer-mailgun-transport");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -35,6 +37,42 @@ const verifyJWT = (req, res, next) => {
     req.decoded = decoded;
     next();
   });
+};
+
+const sendBookingEmail = (booking) => {
+  const { email, treatment, appointment, appointmentDate, slot } = booking;
+  // This is your API key that you retrieve from www.mailgun.com/cp (free up to 10K monthly emails)
+  const auth = {
+    auth: {
+      api_key: process.env.MAILGUN_API_KEY,
+      domain: process.env.MAILGUN_DOMAIN,
+    },
+  };
+
+  const transporter = nodemailer.createTransport(mg(auth));
+  transporter.sendMail(
+    {
+      from: "rubrex11@gmail.com", // verified sender email
+      to: email || "rubrex96@hotmail.com", // recipient email
+      subject: `Your Appointment for ${treatment} is confirmed`, // Subject line
+      text: "Hello world!", // plain text body
+      html: `
+        <h3>Your appointment is confirmed</h3>
+        <div>
+          <p>Your appointment for treatment: ${treatment}</p>
+          <p>Please visit us on ${appointment} at ${slot}</p>
+          <p>Thanks from Doctors Portal</p>
+        </div>
+      `, // html body
+    },
+    function (error, info) {
+      if (error) {
+        console.log("email send error: ", error);
+      } else {
+        console.log("Email sent: " + info.response);
+      }
+    }
+  );
 };
 
 // Make sure to run this after verifyJWT
@@ -213,7 +251,7 @@ app.get("/bookings/:id", async (req, res) => {
 app.post("/bookings", async (req, res) => {
   try {
     const booking = req.body;
-
+    console.log(booking);
     const bookingQuery = {
       email: booking.email,
       treatment: booking.treatment,
@@ -227,6 +265,8 @@ app.post("/bookings", async (req, res) => {
       return res.send({ acknowledged: false, message });
     }
     const result = await bookingsCollection.insertOne(booking);
+    // send email about appointment confirmation
+    sendBookingEmail(booking);
     res.send(result);
   } catch (err) {
     console.log(err);
